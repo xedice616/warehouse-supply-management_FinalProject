@@ -1,0 +1,12 @@
+# Test-only overrides, layered on top of src/main/resources/application.yml.
+# Integration tests use the development database unless WMS_TEST_DB_URL points elsewhere.
+spring:
+  datasource:
+    url: ${WMS_TEST_DB_URL:${WMS_DB_URL}}
+
+wms:
+  security:
+    bcrypt-strength: 4
+    jwt:
+      # Test-only key; signs nothing outside the test JVM.
+      secret: dGVzdC1vbmx5LWp3dC1zZWNyZXQtZm9yLXdtcy1pbnRlZ3JhdGlvbi10ZXN0cy0yNTZiaXQ=

@@ -1,0 +1,125 @@
+# Base configuration shared by every environment.
+# Connection settings and secrets come only from environment variables (or a local .env file);
+# there are no password defaults anywhere. Missing values fail fast at startup.
+spring:
+  application:
+    name: wms
+  config:
+    # Local development: values from .env in the working directory. Ignored when the file is absent.
+    import: optional:file:.env[.properties]
+  autoconfigure:
+    # Authentication is JWT-only; don't create Spring Boot's default in-memory user with a generated password.
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  threads:
+    virtual:
+      enabled: true
+
+  # The application connects as the least-privileged role (data access only).
+  datasource:
+    url: ${WMS_DB_URL}
+    username: ${WMS_DB_APP_USER}
+    password: ${WMS_DB_APP_PASSWORD}
+    hikari:
+      pool-name: wms-pool
+      maximum-pool-size: ${WMS_DB_POOL_SIZE:10}
+
+  # Flyway connects as the schema owner, the only role allowed to change DDL.
+  flyway:
+    user: ${WMS_DB_OWNER_USER}
+    password: ${WMS_DB_OWNER_PASSWORD}
+    schemas: wms
+    default-schema: wms
+    create-schemas: false
+    locations: classpath:db/migration
+    placeholders:
+      app_db_role: ${WMS_DB_APP_USER}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema. Hibernate only checks that entities match it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: wms
+        jdbc:
+          time_zone: UTC
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+        # Loads lazy collections of up to 50 parents in one query, so lists of users with roles avoid N+1.
+        default_batch_fetch_size: 50
+        # Fail on queries that would paginate a collection fetch in memory.
+        query:
+          fail_on_pagination_over_collection_fetch: true
+
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+
+  mvc:
+    problemdetails:
+      enabled: true
+
+  servlet:
+    multipart:
+      # CSV imports are the only uploads. Reject anything larger up front, before it reaches a controller.
+      max-file-size: ${WMS_IMPORT_MAX_FILE_SIZE:5MB}
+      max-request-size: ${WMS_IMPORT_MAX_FILE_SIZE:5MB}
+
+server:
+  shutdown: graceful
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  info:
+    build:
+      enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+  default-produces-media-type: application/json
+
+wms:
+  business-timezone: ${WMS_BUSINESS_TIMEZONE:Asia/Baku}
+  # Cross-origin requests are denied unless origins are listed here (comma-separated). Empty by default.
+  cors:
+    allowed-origins: ${WMS_CORS_ALLOWED_ORIGINS:}
+  security:
+    bcrypt-strength: ${WMS_BCRYPT_STRENGTH:12}
+    jwt:
+      # Base64-encoded, at least 256 bits. No default: startup fails if it is missing.
+      secret: ${WMS_JWT_SECRET}
+      issuer: wms
+      audience: wms-api
+      access-token-ttl: ${WMS_JWT_ACCESS_TOKEN_TTL:PT15M}
+      clock-skew: PT30S
+    lockout:
+      max-failed-attempts: 5
+      duration: PT15M
+    # Optional first administrator, created once when no active ADMIN exists.
+    bootstrap-admin:
+      username: ${WMS_BOOTSTRAP_ADMIN_USERNAME:}
+      email: ${WMS_BOOTSTRAP_ADMIN_EMAIL:}
+      password: ${WMS_BOOTSTRAP_ADMIN_PASSWORD:}

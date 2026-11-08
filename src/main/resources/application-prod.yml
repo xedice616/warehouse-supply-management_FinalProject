@@ -1,0 +1,16 @@
+# Production: settings come from real environment variables or a secret store. Don't ship a .env file
+# with the application; environment variables take precedence over it anyway.
+spring:
+  flyway:
+    # Never wipe a production schema, even if someone runs flyway clean.
+    clean-disabled: true
+
+logging:
+  level:
+    root: INFO
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

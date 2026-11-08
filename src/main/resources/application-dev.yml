@@ -1,0 +1,6 @@
+# Development: verbose logging for our code and SQL. Connection settings still come from .env.
+logging:
+  level:
+    com.anbar.wms: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.flywaydb: INFO
