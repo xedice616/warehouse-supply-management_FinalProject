@@ -32,7 +32,9 @@ DRAFT ──submit──▶ SUBMITTED ──approve──▶ APPROVED ──rece
 - A receipt can't exceed an item's outstanding quantity (`422 RECEIPT_EXCEEDS_ORDER`). Only APPROVED and
   PARTIALLY_RECEIVED orders receive (`409 INVALID_STATE_TRANSITION`).
 - For batch-tracked products the batch number is required. A new batch is created with the dates, the item's
-  unit price as `unit_cost`, and a link to the order item.
+  unit price as `unit_cost`, and a link to the order item. A batch number identifies one physical lot, so
+  receiving an **existing** number with a different production or expiration date is rejected
+  (`409 BATCH_METADATA_MISMATCH`) rather than silently reusing the lot; the production date may not be in the future.
 - **Idempotency.** The order row is locked (`FOR UPDATE`) first, and only then is the key looked up. Concurrent
   retries of the same request therefore run one after another: the first receives, the rest get the original
   receipt back (`200`, `"replayed": true`) without touching stock. Reusing a key for a different order is

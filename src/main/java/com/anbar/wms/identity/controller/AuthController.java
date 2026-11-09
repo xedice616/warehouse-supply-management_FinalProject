@@ -1,5 +1,6 @@
 package com.anbar.wms.identity.controller;
 
+import com.anbar.wms.identity.dto.ChangePasswordRequest;
 import com.anbar.wms.identity.dto.LoginRequest;
 import com.anbar.wms.identity.dto.RegisterRequest;
 import com.anbar.wms.identity.dto.TokenResponse;
@@ -60,5 +61,18 @@ public class AuthController {
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal AuthenticatedUser principal) {
         return authService.currentUser(principal.id());
+    }
+
+    @Operation(summary = "Change your own password",
+            description = "Re-checks the current password, then sets the new one. Existing tokens keep working until "
+                    + "they expire.")
+    @ApiResponse(responseCode = "204", description = "Password changed")
+    @ApiResponse(responseCode = "400", description = "Validation failed (weak new password)")
+    @ApiResponse(responseCode = "401", description = "The current password is incorrect")
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request,
+                                               @AuthenticationPrincipal AuthenticatedUser principal) {
+        authService.changePassword(principal.id(), request.currentPassword(), request.newPassword());
+        return ResponseEntity.noContent().build();
     }
 }

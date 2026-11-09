@@ -63,7 +63,9 @@ public final class ReportResponses {
 
     /**
      * Report 4: inventory value. Cost basis is each batch's unit cost where known, otherwise the product's
-     * purchase price, so the value is a quantity-weighted average cost (never the selling price).
+     * purchase price, so the value is a quantity-weighted average cost (never the selling price). Value assumes a
+     * single base currency; it does not convert between currencies. {@code totalQuantity} is only populated for the
+     * PRODUCT grouping — across warehouses, categories or the whole inventory, units differ and a sum is meaningless.
      */
     public record ValuationRow(
             String key,

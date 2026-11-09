@@ -69,8 +69,8 @@ Endpoints that exist so far:
 | Endpoint | Anonymous | USER | WAREHOUSE_MANAGER | ADMIN |
 |---|---|---|---|---|
 | `POST /api/v1/auth/register`, `POST /api/v1/auth/login` | ✔ | ✔ | ✔ | ✔ |
-| `GET /api/v1/auth/me` | 401 | ✔ | ✔ | ✔ |
-| `GET /api/v1/users`, `PUT /api/v1/users/{id}/roles`, `PUT /api/v1/users/{id}/warehouses` | 401 | 403 | 403 | ✔ |
+| `GET /api/v1/auth/me`, `POST /api/v1/auth/change-password` | 401 | ✔ | ✔ | ✔ |
+| `GET /api/v1/users`, `GET /api/v1/users/{id}`, `PUT /api/v1/users/{id}/roles`, `/warehouses`, `PUT /api/v1/users/{id}/password`, `PATCH /api/v1/users/{id}/status`, `POST /api/v1/users/{id}/unlock` | 401 | 403 | 403 | ✔ |
 | `GET` units, categories, products | 401 | ✔ | ✔ | ✔ |
 | `POST/PUT/PATCH/DELETE` units, categories, products | 401 | 403 | 403 | ✔ |
 | `GET /api/v1/warehouses`, `GET /api/v1/warehouses/{id}` | 401 | assigned only | assigned only | ✔ all |
@@ -208,4 +208,16 @@ curl -X PUT http://localhost:8080/api/v1/users/2/roles -H "Authorization: Bearer
   refresh token.
 - **Rate limiting** on `/auth/*`, planned for the hardening stage. The account lockout covers password guessing
   per account, not credential stuffing across many accounts.
-- **Admin endpoints** to disable or enable users and assign warehouses.
+
+## Account lifecycle
+
+Administrators manage accounts through the Users endpoints:
+
+- `PATCH /users/{id}/status` disables or enables an account. Disabling takes effect immediately — the account
+  cannot log in (`ACCOUNT_DISABLED`) and its existing tokens are rejected on the next request (`INVALID_TOKEN`).
+  The last active administrator cannot be disabled (`LAST_ADMIN_REQUIRED`).
+- `POST /users/{id}/unlock` clears a temporary failed-login lockout and the counter.
+- `PUT /users/{id}/password` sets a new password and unlocks the account (for a user who is locked out or forgot
+  their password).
+- Users change their own password with `POST /auth/change-password`, which re-checks the current password. New
+  passwords must satisfy the password policy; they are never logged.

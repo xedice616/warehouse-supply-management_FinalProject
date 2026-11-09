@@ -100,8 +100,10 @@ Register via `POST /api/v1/auth/register`, then `POST /api/v1/auth/login` for a 
   CSV import, reports.
 - **USER** — read-only: products, product search, available stock in assigned warehouses.
 
-The first administrator is bootstrapped from `WMS_BOOTSTRAP_ADMIN_*`. Full matrix and example requests:
-[docs/SECURITY.md](docs/SECURITY.md).
+The first administrator is bootstrapped from `WMS_BOOTSTRAP_ADMIN_*`. Admins manage accounts through the Users
+endpoints (`GET /users/{id}`, `PATCH /users/{id}/status` to enable/disable, `POST /users/{id}/unlock`,
+`PUT /users/{id}/password`, `PUT /users/{id}/roles`, `/warehouses`); users change their own password with
+`POST /auth/change-password`. Full matrix and example requests: [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Optional: run with Docker
 

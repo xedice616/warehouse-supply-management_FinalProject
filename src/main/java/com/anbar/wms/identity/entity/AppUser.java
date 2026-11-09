@@ -113,6 +113,26 @@ public class AppUser extends AuditableEntity {
         warehouses.addAll(newWarehouses);
     }
 
+    public void enable() {
+        this.status = UserStatus.ACTIVE;
+    }
+
+    /** A disabled account cannot log in, and its existing tokens are rejected on the next request. */
+    public void disable() {
+        this.status = UserStatus.DISABLED;
+    }
+
+    /** Clears a temporary lockout and the failed-login counter (administrator action). */
+    public void unlock() {
+        this.failedLoginAttempts = 0;
+        this.lockedUntil = null;
+    }
+
+    /** @param newPasswordHash an already-encoded password (BCrypt); never a raw password */
+    public void changePassword(String newPasswordHash) {
+        this.passwordHash = Objects.requireNonNull(newPasswordHash, "newPasswordHash");
+    }
+
     public boolean hasRole(RoleCode code) {
         return roles.stream().anyMatch(role -> role.getCode().equals(code.name()));
     }

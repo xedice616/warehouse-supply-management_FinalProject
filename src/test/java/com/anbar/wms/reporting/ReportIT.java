@@ -78,8 +78,10 @@ class ReportIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.content[0].key").value(String.valueOf(product)))
                 .andExpect(jsonPath("$.content[0].totalQuantity").value(70))
                 .andExpect(jsonPath("$.content[0].totalValue").value(105.0));
+        // Across a whole warehouse units may differ, so a summed quantity would be meaningless and is omitted.
         managerApi.get("/api/v1/reports/inventory-valuation?groupBy=TOTAL&warehouseId=" + warehouse)
-                .andExpect(jsonPath("$.content[0].totalValue").value(105.0));
+                .andExpect(jsonPath("$.content[0].totalValue").value(105.0))
+                .andExpect(jsonPath("$.content[0].totalQuantity").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test

@@ -125,6 +125,18 @@ public class AuthService {
         return userMapper.toResponse(user);
     }
 
+    /** Changes the authenticated user's own password after re-checking the current one. */
+    @Transactional
+    public void changePassword(long userId, String currentPassword, String newPassword) {
+        AppUser user = users.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        if (!passwordMatches(currentPassword, user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "The current password is incorrect");
+        }
+        user.changePassword(passwordEncoder.encode(newPassword));
+        log.info("User id={} changed their own password", userId);
+    }
+
     private Optional<AppUser> findByUsernameOrEmail(String usernameOrEmail) {
         String value = usernameOrEmail.trim();
         return value.contains("@")

@@ -86,6 +86,11 @@ product's `purchase_price`** — never the selling price. Because each batch car
 summed, this is a quantity-weighted average cost at the product level, which is what the existing data model
 supports (there is no separate moving-average cost ledger).
 
+The value **assumes a single base currency** (the deployment's default, AZN); there is no FX conversion, so mixing
+purchase orders in different currencies would mix units of money. `totalQuantity` is returned only for the
+`PRODUCT` grouping — across warehouses, categories or the whole inventory, products use different units (pieces,
+kg, …) and a summed quantity would be meaningless, so it is `null` there.
+
 ## Known limitations
 
 - The import posts valid rows atomically per file (all-or-nothing for the set of *valid* rows); it is not a

@@ -208,7 +208,10 @@ public class ReportQueries {
             case CATEGORY -> "c.name";
             case TOTAL -> "'All inventory'";
         };
-        String grouped = "SELECT " + key + " AS key, max(" + label + ") AS label, SUM(b.quantity) AS total_quantity, "
+        // A sum of quantities is only meaningful when every row shares a unit, i.e. grouped by product. Across
+        // warehouses, categories or the whole inventory it would add e.g. pieces to kilograms, so it is left null.
+        String quantity = grouping == ValuationGrouping.PRODUCT ? "SUM(b.quantity)" : "CAST(NULL AS numeric)";
+        String grouped = "SELECT " + key + " AS key, max(" + label + ") AS label, " + quantity + " AS total_quantity, "
                 + "SUM(" + value + ") AS total_value " + where
                 + (grouping == ValuationGrouping.TOTAL ? "" : " GROUP BY " + key);
 

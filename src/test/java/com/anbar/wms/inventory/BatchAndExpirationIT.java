@@ -159,6 +159,29 @@ class BatchAndExpirationIT extends AbstractIntegrationTest {
                 Long.class, warehouse)).isZero();
     }
 
+    @Test
+    void reusingABatchNumberWithADifferentDateIsRejected() throws Exception {
+        receive("DUP", TODAY.plusDays(30), "5");
+
+        // Same number, contradictory expiry → 409; the same date is accepted and tops the lot up.
+        api.post("/api/v1/stock-movements/inbound", """
+                {"productId": %d, "warehouseId": %d, "quantity": 1, "batchNumber": "DUP", "expiresOn": "%s"}"""
+                .formatted(product, warehouse, TODAY.plusDays(40)))
+                .andExpect(problem(409, "BATCH_METADATA_MISMATCH"));
+        receive("DUP", TODAY.plusDays(30), "2");
+        assertThat(batchQuantity("DUP")).isEqualByComparingTo("7");
+    }
+
+    @Test
+    void aFutureProductionDateIsRejected() throws Exception {
+        api.post("/api/v1/stock-movements/inbound", """
+                {"productId": %d, "warehouseId": %d, "quantity": 1, "batchNumber": "FUT",
+                 "expiresOn": "%s", "manufacturedOn": "%s"}"""
+                .formatted(product, warehouse, TODAY.plusDays(90), TODAY.plusDays(1)))
+                .andExpect(problem(400, "VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.field").value("producedOn"));
+    }
+
     private void receive(String batchNumber, LocalDate expiresOn, String quantity) throws Exception {
         api.post("/api/v1/stock-movements/inbound", """
                 {"productId": %d, "warehouseId": %d, "quantity": %s, "batchNumber": "%s", "expiresOn": "%s"}"""

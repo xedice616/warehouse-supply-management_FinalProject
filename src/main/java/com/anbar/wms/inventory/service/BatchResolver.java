@@ -42,12 +42,33 @@ class BatchResolver {
         }
         String number = request.batchNumber().trim();
         StockBatch batch = batches.findByProductIdAndBatchNumber(product.getId(), number)
+                .map(existing -> reuse(existing, request))
                 .orElseGet(() -> create(product, number, request));
         if (batch.isExpiredOn(today())) {
             throw new BusinessException(ErrorCode.BATCH_EXPIRED,
                     "Batch %s expired on %s; expired goods can't be received".formatted(number, batch.getExpiresOn()));
         }
         return batch;
+    }
+
+    /**
+     * A batch number identifies one physical lot, so a later receipt that names the same number must not quietly
+     * carry different dates. Reusing the lot is fine; contradicting its production or expiration date is a mistake
+     * worth surfacing ({@code 409}) rather than silently ignoring.
+     */
+    private StockBatch reuse(StockBatch batch, InboundBatch request) {
+        requireMatches("expiration date", request.expiresOn(), batch.getExpiresOn(), batch.getBatchNumber());
+        requireMatches("production date", request.producedOn(), batch.getManufacturedOn(), batch.getBatchNumber());
+        return batch;
+    }
+
+    private static void requireMatches(String field, LocalDate given, LocalDate stored, String batchNumber) {
+        if (given != null && !given.equals(stored)) {
+            throw new BusinessException(ErrorCode.BATCH_METADATA_MISMATCH,
+                    "Batch %s already has %s %s; it cannot be received with %s".formatted(
+                            batchNumber, field, stored, given),
+                    Map.of("batchNumber", batchNumber, "field", field));
+        }
     }
 
     /** For stock going out with an explicitly named lot; expired lots only when {@code expiredAllowed}. */
@@ -81,6 +102,10 @@ class BatchResolver {
     private StockBatch create(Product product, String number, InboundBatch request) {
         if (product.isExpiryTracked() && request.expiresOn() == null) {
             throw new BusinessException(ErrorCode.EXPIRY_DATE_REQUIRED);
+        }
+        if (request.producedOn() != null && request.producedOn().isAfter(today())) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "The production date cannot be in the future", Map.of("field", "producedOn"));
         }
         if (request.producedOn() != null && request.expiresOn() != null
                 && !request.expiresOn().isAfter(request.producedOn())) {

@@ -53,6 +53,7 @@ public enum ErrorCode {
     RESOURCE_IN_USE(HttpStatus.CONFLICT, "The resource is referenced by other data and cannot be deleted"),
     STOCK_ON_HAND(HttpStatus.CONFLICT, "The operation is not allowed while stock is on hand"),
     STOCK_HISTORY_EXISTS(HttpStatus.CONFLICT, "The change would reinterpret existing stock history"),
+    BATCH_METADATA_MISMATCH(HttpStatus.CONFLICT, "The batch already exists with different production or expiration dates"),
 
     // 422
     BUSINESS_RULE_VIOLATION(HttpStatus.UNPROCESSABLE_CONTENT, "The request violates a business rule"),
